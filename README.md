@@ -1,7 +1,7 @@
 # binder
 a build tool for my thoughts. not for general consumption.
 
-## `.bndr` markup
+## `bndr` markup
 this is a really simplified markdown clone. It's design goal is to quickly
 allow me to write quickly and then generate some relatively readable HTML files
 
