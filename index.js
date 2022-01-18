@@ -1,7 +1,8 @@
 const {argv} = require('process')
 const { constants } = require('fs')
-const { access, mkdir, readdir, readFile, writeFile } = require('fs/promises')
+const { access, mkdir, readdir, readFile, writeFile, stat } = require('fs/promises')
 const path = require('path')
+const BODY_DELIMITER = '---'
 const NL = /\r?\n/
 const HASHTAG = '#'
 const DASH = '-'
@@ -23,10 +24,13 @@ async function main(args) {
   }
   const [src, obj] = args
 
-  if(!await exists(obj)) await mkdir(obj)
+  const indexBody = await build(src, obj)
+  await writeFile(
+    path.join(obj, `index.html`),
+    generatePage({title: 'Index', date: new Date()}, indexBody)
+  )
 
-  const sheets = await scanSrc(src)
-  return buildObj(obj, sheets)
+  console.log(`site built in ${obj}`)
 
 }
 
@@ -43,27 +47,76 @@ async function exists(path) {
   return true
 }
 
-async function scanSrc(src) {
-  const files = await readdir(src)
-  const sheets = []
-  for (const file of files) {
-    BODY_DELIMITER = '---'
-    const filePath = path.join('src', file)
-    const content = await readFile(filePath, {encoding: 'utf8'})
-    const [headerPart, bodyPart] = content.split(BODY_DELIMITER)
-    
-    const sheet = {}
-    sheet['srcPath'] = filePath
-    sheet['filename'] = file.split('.')[0]
-    // parse header
-    sheet['header'] = parseHeader(headerPart)
-    // parse body
-    sheet['body'] = parseBody(bodyPart)
+async function build(src, obj) {
+  let indexBody = ''
+  const items = await readdir(src)
+  if(!await exists(obj)) await mkdir(obj)
 
-    sheets.push(sheet)
+  for (const item of items) {
+    const itemPath = path.join(src, item)
+    const stats = await stat(itemPath)
+
+    if(!stats.isDirectory()) {
+      const sheet = await parseFile(itemPath)
+      await buildObj(obj, sheet)
+      indexBody += `
+      <a href="${path.join(path.basename(obj), sheet.filename)}.html">
+        ${sheet.header.title}
+      </a>\n
+      <br/>\n`
+    } else {
+      const root =  path.join(src, item)
+      const dest = path.join(obj, item)
+      indexBody += await build(root, dest)
+    }
   }
+  return indexBody
+}
+
+async function parseFile(filePath) {
+  const content = await readFile(filePath, {encoding: 'utf8'})
+  const [headerPart, bodyPart] = content.split(BODY_DELIMITER)
   
-  return sheets
+  const sheet = {}
+  sheet['filename'] = path.basename(filePath, '.bndr')
+  // parse header
+  sheet['header'] = parseHeader(headerPart)
+  // parse body
+  sheet['body'] = parseBody(bodyPart)
+  return sheet
+}
+
+async function buildObj(obj, sheet) {
+  return writeFile(
+    path.join(obj, `${sheet.filename}.html`),
+    generatePage(sheet.header, sheet.body)
+  )
+}
+
+function generatePage(header, body) {
+  const dateFormater = new Intl.DateTimeFormat(
+    'en-GB',
+    {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }
+  )
+ 
+  return `<!DOCTYPE html>
+  <html>
+    <head>
+      <title>${header.title}</title>
+    </head>
+    <body>
+      <h1>${header.title}</h1>
+      ${body}
+      <hr>
+      Edited on ${dateFormater.format(header.date).toLowerCase()}
+    </body>
+  </html>
+  `
 }
 
 function parseHeader(headerLines) {
@@ -339,51 +392,3 @@ function generateImage(text, src) {
   return `<img src=${src} alt=${text}>`
 }
 
-async function buildObj(obj, sheets) {
-  const ops = []
-  let indexBody = ''
-  for (const sheet of sheets) {
-    ops.push(
-      writeFile(
-        path.join(obj, `${sheet.filename}.html`),
-        generatePage(sheet.header, sheet.body)
-      )
-    )
-
-    indexBody += `
-    <a href="${sheet.filename}.html">${sheet.header.title}</a>\n<br/>\n
-    `
-  }
-  
-  await Promise.all(ops)
-
-  await writeFile(
-    path.join(obj, 'index.html'),
-    generatePage({title: 'Index', date: new Date()}, indexBody)
-  )
-}
-
-function generatePage(header, body) {
-  const dateFormater = new Intl.DateTimeFormat(
-    'en-GB',
-    {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }
-  )
-
-  return `<html>
-    <head>
-      <title>${header.title}</title>
-    </head>
-    <body>
-      <h1>${header.title}</h1>
-      ${body}
-      <hr>
-      Edited on ${dateFormater.format(header.date).toLowerCase()}
-    </body>
-  </html>
-  `
-}
