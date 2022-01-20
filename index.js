@@ -1,4 +1,3 @@
-const {argv} = require('process')
 const path = require('path')
 const { constants } = require('fs')
 const {
@@ -23,10 +22,7 @@ const BANG = '!'
 const ASTERISK = '*'
 const UNDERSCORE = '_'
 
-const [, , ...args] = argv
-main(args).catch(err => console.error('binder:', err.message))
-
-async function main(args) {
+module.exports = async function main(args) {
   if (args.length < 2) {
     usage('not enough args')
   }
@@ -48,6 +44,7 @@ async function main(args) {
 
 function usage(message) {
   console.error(`${message ? message + " ": ""}\nUsage: binder [src] [obj]`)
+  process.exit(1)
 }
 
 async function exists(path) {
