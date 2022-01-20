@@ -21,12 +21,15 @@ const PIPE = '|'
 const BANG = '!'
 const ASTERISK = '*'
 const UNDERSCORE = '_'
+const ROOTPARENTNAME = 'home'
 
 module.exports = async function main(args) {
   if (args.length < 2) {
     usage('not enough args')
   }
-  const [src, obj] = args
+  let [src, obj] = args
+  src = src.replace(/\/$/, '')
+  obj = obj.replace(/\/$/, '')
 
   const indexBody = await build(src, obj)
   await writeFile(
@@ -84,7 +87,7 @@ async function build(src, obj) {
 
 function buildMenu(metaEntry, metaData) {
   const neighbours = metaData.filter(entry => entry.parent === metaEntry.parent)
-  const homePath = metaEntry.destPath
+  const homePath = metaEntry.parent === ROOTPARENTNAME ? '.' : metaEntry.destPath
   .split(path.sep)
   .filter(pt => pt !== metaEntry.parent )
   .map(_ => '..')
@@ -127,7 +130,7 @@ function getMetaData(file, src, obj) {
   const [, ...navParts] = srcParts
   const nav = navParts.join(path.sep)
 
-  meta['parent'] = srcParts.length === 1 ? 'home' : srcParts[srcParts.length - 1]
+  meta['parent'] = srcParts.length === 1 ? ROOTPARENTNAME : srcParts[srcParts.length - 1]
   meta['srcPath'] = src
   meta['destPath'] = obj
   meta['nav'] = nav
