@@ -1,0 +1,47 @@
+title: X marks the spot
+date: 2022-01-16
+---
+
+#1 Heading 1
+#2 Heading 2
+#3 Heading 3
+#4 Heading 4
+#5 Heading 5
+#6 Heading 6
+
+#2 Links
+[XXIIVV|http://xxiivv.com]
+
+![100r image|https://100r.co/media/content/about/galley.png]
+
+
+#2 Formating
+*bold*
+_italics_
+`code`
+```
+code block
+```
+
+#2 Lists
+- first
+- second
+- third
+
+# first
+# second
+# third
+
+#2 Mix it up
+This is a  random document meant for testing. More random stuff. Life you have to be be *bold* and _emphasize_ what is in your `code`. Find out more [here|y.html].
+
+- This is a list formats
+- some *boldness*
+- some _emphasis_
+- some `code`
+
+# This is a list formats
+# some *boldness*
+# some _emphasis_
+# some `code`
+

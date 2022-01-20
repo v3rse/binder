@@ -1,7 +1,15 @@
 const {argv} = require('process')
-const { constants } = require('fs')
-const { access, mkdir, readdir, readFile, writeFile, stat } = require('fs/promises')
 const path = require('path')
+const { constants } = require('fs')
+const {
+  access,
+  mkdir,
+  readdir,
+  readFile,
+  writeFile,
+  stat
+} = require('fs/promises')
+
 const BODY_DELIMITER = '---'
 const NL = /\r?\n/
 const HASHTAG = '#'
@@ -27,7 +35,11 @@ async function main(args) {
   const indexBody = await build(src, obj)
   await writeFile(
     path.join(obj, `index.html`),
-    generatePage({title: 'Index', date: new Date()}, indexBody)
+    generatePage(
+      {title: 'Index', date: new Date()},
+      indexBody,
+      ``
+    )
   )
 
   console.log(`site built in ${obj}`)
@@ -49,28 +61,82 @@ async function exists(path) {
 
 async function build(src, obj) {
   let indexBody = ''
+  let meta = await collectMetaData(src, obj)
+
+  for (const entry of meta) {
+    if(!await exists(entry.destPath)) await mkdir(entry.destPath, {recursive: true})
+
+     const sheet = await parseFile(
+      path.join(
+        entry.srcPath,
+        `${entry.fileName}.bndr`
+      ))
+
+      const menu = buildMenu(entry, meta)
+
+      await buildObj(sheet, entry, menu)
+      indexBody += `
+      <a href="${path.join(entry.nav, entry.fileName)}.html">
+        ${sheet.header.title}
+      </a>\n
+      <br/>\n`
+  }
+
+  return indexBody
+}
+
+function buildMenu(metaEntry, metaData) {
+  const neighbours = metaData.filter(entry => entry.parent === metaEntry.parent)
+  const homePath = metaEntry.destPath
+  .split(path.sep)
+  .filter(pt => pt !== metaEntry.parent )
+  .map(_ => '..')
+  .join(path.sep)
+
+  return neighbours.reduce(
+    (prev, curr) => 
+    curr.fileName === metaEntry.fileName 
+    ? `${prev}<li><strong><em>${curr.fileName}<strong></em></li>`
+    : `${prev}<li><a href="${curr.fileName}.html"><strong>${curr.fileName}<strong></a></li>`
+  , `<li><a href="${homePath}/index.html">back to index</a></li>`)
+}
+
+async function collectMetaData(src, obj) {
   const items = await readdir(src)
-  if(!await exists(obj)) await mkdir(obj)
+
+  let fileMetaData = []
 
   for (const item of items) {
     const itemPath = path.join(src, item)
     const stats = await stat(itemPath)
 
     if(!stats.isDirectory()) {
-      const sheet = await parseFile(itemPath)
-      await buildObj(obj, sheet)
-      indexBody += `
-      <a href="${path.join(path.basename(obj), sheet.filename)}.html">
-        ${sheet.header.title}
-      </a>\n
-      <br/>\n`
+      const meta =  getMetaData(item, src, obj)
+      fileMetaData.push(meta)
     } else {
       const root =  path.join(src, item)
       const dest = path.join(obj, item)
-      indexBody += await build(root, dest)
+      const meta = await collectMetaData(root, dest)
+      fileMetaData.push(...meta)
     }
   }
-  return indexBody
+
+  return fileMetaData
+}
+
+function getMetaData(file, src, obj) {
+  let meta = {}
+  let srcParts = src.split(path.sep)
+  const [, ...navParts] = srcParts
+  const nav = navParts.join(path.sep)
+
+  meta['parent'] = srcParts.length === 1 ? 'home' : srcParts[srcParts.length - 1]
+  meta['srcPath'] = src
+  meta['destPath'] = obj
+  meta['nav'] = nav
+  meta['fileName'] = path.basename(file, '.bndr')
+
+  return meta
 }
 
 async function parseFile(filePath) {
@@ -78,22 +144,19 @@ async function parseFile(filePath) {
   const [headerPart, bodyPart] = content.split(BODY_DELIMITER)
   
   const sheet = {}
-  sheet['filename'] = path.basename(filePath, '.bndr')
-  // parse header
   sheet['header'] = parseHeader(headerPart)
-  // parse body
   sheet['body'] = parseBody(bodyPart)
   return sheet
 }
 
-async function buildObj(obj, sheet) {
+async function buildObj(sheet, meta, menu) {
   return writeFile(
-    path.join(obj, `${sheet.filename}.html`),
-    generatePage(sheet.header, sheet.body)
+    path.join(meta.destPath, `${meta.fileName}.html`),
+    generatePage(sheet.header, sheet.body, menu)
   )
 }
 
-function generatePage(header, body) {
+function generatePage(header, body, menu) {
   const dateFormater = new Intl.DateTimeFormat(
     'en-GB',
     {
@@ -111,6 +174,9 @@ function generatePage(header, body) {
     </head>
     <body>
       <h1>${header.title}</h1>
+      <ul>
+        ${menu}
+      </ul>
       ${body}
       <hr>
       Edited on ${dateFormater.format(header.date).toLowerCase()}
