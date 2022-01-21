@@ -22,6 +22,7 @@ const BANG = '!'
 const ASTERISK = '*'
 const UNDERSCORE = '_'
 const ROOTPARENTNAME = 'home'
+const LINKSDIR = 'links'
 
 module.exports = async function main(args) {
   if (args.length < 2) {
@@ -37,7 +38,8 @@ module.exports = async function main(args) {
     generatePage(
       {title: 'Index', date: new Date()},
       indexBody,
-      ``
+      '',
+      '.'
     )
   )
 
@@ -63,42 +65,59 @@ async function build(src, obj) {
   let indexBody = ''
   let meta = await collectMetaData(src, obj)
 
+  let writeOps = []
+
   for (const entry of meta) {
     if(!await exists(entry.destPath)) await mkdir(entry.destPath, {recursive: true})
 
+    const homeDepth = entry.parent === ROOTPARENTNAME ? '.' : entry.destPath
+    .split(path.sep)
+    .filter(pt => pt !== entry.parent )
+    .map(_ => '..')
+    .join(path.sep)
+
+    if(entry.extension !== '.bndr') {
+      const resource = await readFile(path.join(
+        entry.srcPath,
+        `${entry.fileName}${entry.extension}`
+      ))
+      op = writeFile(
+        path.join(entry.destPath, `${entry.fileName}${entry.extension}`),
+        resource
+      )
+      writeOps.push(op)
+    }else {
      const sheet = await parseFile(
       path.join(
         entry.srcPath,
         `${entry.fileName}.bndr`
       ))
 
-      const menu = buildMenu(entry, meta)
+      const menu = buildMenu(entry, meta, homeDepth)
 
-      await buildObj(sheet, entry, menu)
+      op = buildObj(sheet, entry, menu, homeDepth)
+      writeOps.push(op)
       indexBody += `
       <a href="${path.join(entry.nav, entry.fileName)}.html">
         ${sheet.header.title}
       </a>\n
       <br/>\n`
+    }
   }
 
+  await Promise.all(writeOps)
   return indexBody
 }
 
-function buildMenu(metaEntry, metaData) {
+function buildMenu(metaEntry, metaData, homeDepth) {
   const neighbours = metaData.filter(entry => entry.parent === metaEntry.parent)
-  const homePath = metaEntry.parent === ROOTPARENTNAME ? '.' : metaEntry.destPath
-  .split(path.sep)
-  .filter(pt => pt !== metaEntry.parent )
-  .map(_ => '..')
-  .join(path.sep)
 
   return neighbours.reduce(
     (prev, curr) => 
     curr.fileName === metaEntry.fileName 
     ? `${prev}<li><strong><em>${curr.fileName}<strong></em></li>`
     : `${prev}<li><a href="${curr.fileName}.html"><strong>${curr.fileName}<strong></a></li>`
-  , `<li><a href="${homePath}/index.html">back to index</a></li>`)
+  , `<li><a href="${homeDepth}/index.html">back to index</a></li>`)
 }
 
 async function collectMetaData(src, obj) {
@@ -110,14 +129,14 @@ async function collectMetaData(src, obj) {
     const itemPath = path.join(src, item)
     const stats = await stat(itemPath)
 
-    if(!stats.isDirectory()) {
-      const meta =  getMetaData(item, src, obj)
-      fileMetaData.push(meta)
-    } else {
+    if(stats.isDirectory()) {
       const root =  path.join(src, item)
       const dest = path.join(obj, item)
       const meta = await collectMetaData(root, dest)
       fileMetaData.push(...meta)
+    } else {
+      const meta =  getMetaData(item, src, obj)
+      fileMetaData.push(meta)
     }
   }
 
@@ -129,12 +148,14 @@ function getMetaData(file, src, obj) {
   let srcParts = src.split(path.sep)
   const [, ...navParts] = srcParts
   const nav = navParts.join(path.sep)
+  const ext = path.extname(file)
 
   meta['parent'] = srcParts.length === 1 ? ROOTPARENTNAME : srcParts[srcParts.length - 1]
   meta['srcPath'] = src
   meta['destPath'] = obj
   meta['nav'] = nav
-  meta['fileName'] = path.basename(file, '.bndr')
+  meta['fileName'] = path.basename(file, ext)
+  meta['extension'] = ext
 
   return meta
 }
@@ -149,21 +170,23 @@ async function parseFile(filePath) {
   return sheet
 }
 
-async function buildObj(sheet, meta, menu) {
+async function buildObj(sheet, meta, menu, homeDepth) {
   return writeFile(
     path.join(meta.destPath, `${meta.fileName}.html`),
-    generatePage(sheet.header, sheet.body, menu)
+    generatePage(sheet.header, sheet.body, menu, homeDepth)
   )
 }
 
-function generatePage(header, body, menu) {
+function generatePage(header, body, menu, homeDepth) {
   const dateFormater = new Intl.DateTimeFormat(
     'en-GB',
     {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric'
     }
   )
  
@@ -171,15 +194,26 @@ function generatePage(header, body, menu) {
   <html>
     <head>
       <title>${header.title}</title>
+      <link href="${homeDepth}/${LINKSDIR}/main.css" rel="stylesheet">
     </head>
     <body>
-      <h1>${header.title}</h1>
-      <ul>
-        ${menu}
-      </ul>
-      ${body}
-      <hr>
-      Edited on ${dateFormater.format(header.date).toLowerCase()}
+      <header>
+        <h1>${header.title}</h1>
+      </header>
+
+      <nav>
+        <ul>
+          ${menu}
+        </ul>
+      </nav>
+
+      <main>
+        ${body}
+      </main>
+
+      <footer>
+        Edited on ${dateFormater.format(header.date).toLowerCase()}
+      </footer>
     </body>
   </html>
   `
