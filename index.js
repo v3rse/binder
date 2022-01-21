@@ -115,8 +115,8 @@ function buildMenu(metaEntry, metaData, homeDepth) {
   return neighbours.reduce(
     (prev, curr) => 
     curr.fileName === metaEntry.fileName 
-    ? `${prev}<li><strong><em>${curr.fileName}<strong></em></li>`
-    : `${prev}<li><a href="${curr.fileName}.html"><strong>${curr.fileName}<strong></a></li>`
+    ? `${prev}<li><strong><em>${curr.fileName}</strong></em></li>`
+    : `${prev}<li><a href="${curr.fileName}.html"><strong>${curr.fileName}</strong></a></li>`
   , `<li><a href="${homeDepth}/index.html">back to index</a></li>`)
 }
 
@@ -197,23 +197,14 @@ function generatePage(header, body, menu, homeDepth) {
       <link href="${homeDepth}/${LINKSDIR}/main.css" rel="stylesheet">
     </head>
     <body>
-      <header>
-        <h1>${header.title}</h1>
-      </header>
-
+      <header> <h1>${header.title}</h1> </header>
       <nav>
         <ul>
           ${menu}
         </ul>
       </nav>
-
-      <main>
-        ${body}
-      </main>
-
-      <footer>
-        Edited on ${dateFormater.format(header.date).toLowerCase()}
-      </footer>
+      <main>${body}</main>
+      <footer>Edited on ${dateFormater.format(header.date).toLowerCase()}</footer>
     </body>
   </html>
   `
