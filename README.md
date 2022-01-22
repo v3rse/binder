@@ -7,14 +7,27 @@ npm install . -g
 ```
 
 ## usage
+- build a site:
 ```
-binder [src] [dest]
+binder [parse] [src] [dest]
 ```
 
-try:
+try the following in this directory:
 ```
 binder docs wiki
 ```
+
+- parse a file
+```
+binder parse [file]
+```
+
+try creating an html file:
+```
+binder parse docs/example.bndr > example.html
+```
+
+__NB: you may need to change the path of the CSS stylesheet file__
 
 ## `bndr` markup
 this is a really simplified markdown clone. It's design goal is to quickly
