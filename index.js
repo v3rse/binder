@@ -11,6 +11,14 @@ const {
 const { parseFile, generatePage } = require('./parser')
 
 const ROOTPARENTNAME = 'home'
+const dateFormater = new Intl.DateTimeFormat(
+    'en-US',
+    {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }
+  )
 
 module.exports = async function main(args) {
   let [src, obj] = args
@@ -22,7 +30,11 @@ module.exports = async function main(args) {
     path.join(obj, `index.html`),
     generatePage(
       {title: 'Index', date: new Date()},
-      indexBody,
+      `
+      <ul>
+        ${indexBody}
+      </ul>
+      `,
       '',
       '.'
     )
@@ -31,10 +43,6 @@ module.exports = async function main(args) {
   console.log(`site built in ${obj}`)
 }
 
-function usage(message) {
-  console.error(`${message ? message + " ": ""}\nUsage: binder [src] [obj]`)
-  process.exit(1)
-}
 
 async function exists(path) {
   try {
@@ -82,10 +90,15 @@ async function build(src, obj) {
       op = buildObj(sheet, entry, menu, homeDepth)
       writeOps.push(op)
       indexBody += `
-      <a href="${path.join(entry.nav, entry.fileName)}.html">
-        ${sheet.header.title}
-      </a>\n
-      <br/>\n`
+      <li>
+        <time datetime="${sheet.header.date}">
+          ${dateFormater.format(sheet.header.date)}
+        </time>
+        <a href="${path.join(entry.nav, entry.fileName)}.html">
+          ${sheet.header.title}
+        </a>\n
+      </li>
+      `
     }
   }
 

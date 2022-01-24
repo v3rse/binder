@@ -56,7 +56,9 @@ function generatePage(header, body, menu, homeDepth) {
         </ul>
       </nav>
       <main>${body}</main>
-      <footer>Edited on ${dateFormater.format(header.date).toLowerCase()}</footer>
+      <footer>
+        Edited on ${dateFormater.format(header.date).toLowerCase()}
+      </footer>
     </body>
   </html>
   `
@@ -66,7 +68,10 @@ function parseHeader(headerLines) {
   const ASSIGNMENT_DELIMITER = ':'
   const header = {}
   for (const headerLine of headerLines.split(NL)) {
-    let [key, value] = headerLine.split(ASSIGNMENT_DELIMITER)
+    const delimiterIndex = headerLine.indexOf(ASSIGNMENT_DELIMITER)
+    const key = headerLine.substring(0, delimiterIndex)
+    let value = headerLine.substring(delimiterIndex + 1)
+
     if (key) {
       value = value.trim()
 
