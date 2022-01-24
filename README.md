@@ -1,6 +1,8 @@
 # binder
 a build tool for my thoughts. not for general consumption.
 
+[find a live example here](http://www.nanaadane.com/)
+
 ## installation
 ```
 npm install . -g

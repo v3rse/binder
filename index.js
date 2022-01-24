@@ -11,6 +11,7 @@ const {
 const { parseFile, generatePage } = require('./parser')
 
 const ROOTPARENTNAME = 'home'
+const HIDDENINMENU = ['CNAME']
 const dateFormater = new Intl.DateTimeFormat(
     'en-US',
     {
@@ -107,7 +108,9 @@ async function build(src, obj) {
 }
 
 function buildMenu(metaEntry, metaData, homeDepth) {
-  const neighbours = metaData.filter(entry => entry.parent === metaEntry.parent)
+  const neighbours = metaData.filter(
+    entry => entry.parent === metaEntry.parent && !HIDDENINMENU.includes(entry.fileName)
+  )
 
   return neighbours.reduce(
     (prev, curr) => 
