@@ -4,65 +4,29 @@ const BODY_DELIMITER = '---'
 const NL = /\r?\n/
 const HASHTAG = '#'
 const DASH = '-'
-const BACKTICK = '`' 
-const BACKTICKS = '```' 
+const BACKTICK = '`'
+const BACKTICKS = '```'
 const OPENBRACKET = '['
 const CLOSEDBRACKET = ']'
 const PIPE = '|'
 const BANG = '!'
 const ASTERISK = '*'
 const UNDERSCORE = '_'
-const LINKSDIR = 'links'
 
 module.exports = {
-  parseFile,
-  generatePage
+  parseFile
 }
 
 async function parseFile(filePath) {
-  const content = await readFile(filePath, {encoding: 'utf8'})
+  const content = await readFile(filePath, { encoding: 'utf8' })
   const [headerPart, bodyPart] = content.split(BODY_DELIMITER)
-  
+
   const sheet = {}
   sheet['header'] = parseHeader(headerPart)
   sheet['body'] = parseBody(bodyPart)
   return sheet
 }
 
-function generatePage(header, body, menu, homeDepth) {
-  const dateFormater = new Intl.DateTimeFormat(
-    'en-GB',
-    {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric'
-    }
-  )
- 
-  return `<!DOCTYPE html>
-  <html>
-    <head>
-      <title>${header.title}</title>
-      <link href="${homeDepth}/${LINKSDIR}/main.css" rel="stylesheet">
-    </head>
-    <body>
-      <header> <h1>${header.title}</h1> </header>
-      <nav>
-        <ul>
-          ${menu}
-        </ul>
-      </nav>
-      <main>${body}</main>
-      <footer>
-        Edited on ${dateFormater.format(header.date).toLowerCase()}
-      </footer>
-    </body>
-  </html>
-  `
-}
 
 function parseHeader(headerLines) {
   const ASSIGNMENT_DELIMITER = ':'
@@ -75,7 +39,7 @@ function parseHeader(headerLines) {
     if (key) {
       value = value.trim()
 
-      switch(key) {
+      switch (key) {
         case 'date':
           value = new Date(value)
           break
@@ -99,22 +63,22 @@ function parseBody(bodyText) {
 
   for (let i = 0; i < bodyLines.length; i++) {
     const curr = bodyLines[i].trim()
-    const next = bodyLines[i+1]?.trim()
+    const next = bodyLines[i + 1]?.trim()
 
-    if(!curr) {
+    if (!curr) {
       continue
     }
 
-    switch(curr[0]){
+    switch (curr[0]) {
       // parse blocks first
       // and then lines
       case HASHTAG:
         // headings
-        if(!isNaN(parseInt(curr[1]))) {
+        if (!isNaN(parseInt(curr[1]))) {
           parsed += generateHeading(curr[1], curr.substring(3, curr.length))
         } else {
-        // ordered lists
-          const unlock = !(next[0] === HASHTAG) 
+          // ordered lists
+          const unlock = !(next[0] === HASHTAG)
           let [val, lck] = orderedListParser(curr, listLock, unlock)
           parsed += val
           listLock = lck
@@ -122,15 +86,15 @@ function parseBody(bodyText) {
         break
       case DASH:
         // unordered lists
-        const unlock = !(next[0] === DASH) 
+        const unlock = !(next[0] === DASH)
         let [val, lck] = unorderedListParser(curr, listLock, unlock)
         parsed += val
         listLock = lck
         break
       case BACKTICK:
         // code block
-        if(curr.substring(0) == BACKTICKS) {
-          if(!blockLock) {
+        if (curr.substring(0) == BACKTICKS) {
+          if (!blockLock) {
             // start
             parsed += startCodeBlock()
             blockLock = true
@@ -142,7 +106,7 @@ function parseBody(bodyText) {
           break
         }
       default:
-        if(blockLock) {
+        if (blockLock) {
           // handle block items
           parsed += ` ${curr}\n`
           break
@@ -161,7 +125,7 @@ function listParser(start, item, end) {
     const text = currLine.substring(2, currLine.length)
 
     // start list
-    if(!locked) {
+    if (!locked) {
       lck = true
       compiledList += start()
     }
@@ -170,7 +134,7 @@ function listParser(start, item, end) {
     compiledList += item(text)
 
     // end list
-    if(unlock) {
+    if (unlock) {
       lck = false
       compiledList += end()
     }
@@ -223,16 +187,16 @@ function parseLine(line) {
   const chars = line.split('')
   let comp = ''
 
-  const 
-  parseBold = lineParser(ASTERISK)
+  const
+    parseBold = lineParser(ASTERISK)
   const parseItalics = lineParser(UNDERSCORE)
   const parseCode = lineParser(BACKTICK)
 
   for (let i = 0; i < chars.length; i++) {
     const curr = chars[i]
-    const next = chars[i+1]
+    const next = chars[i + 1]
 
-    switch(curr) {
+    switch (curr) {
       case OPENBRACKET:
         // skip to the next
         i++
@@ -245,10 +209,10 @@ function parseLine(line) {
         i = lindex
         break
       case BANG:
-        if(OPENBRACKET === next) {
+        if (OPENBRACKET === next) {
           // skip to the first 2 symbols
-          i+=2
-            
+          i += 2
+
           // parse
           const [itext, isrc, iindex] = parseLinkOrImageAttributes(i, chars)
           comp += generateImage(itext, isrc)
@@ -284,16 +248,16 @@ function parseLine(line) {
 }
 
 function lineParser(endSymbol) {
- return function (i, chars) {
-  let text = ''
-  
-  while(!(chars[i] === endSymbol || chars[i] ===  NL)) {
-    text += chars[i]
-    i++
-  }
+  return function(i, chars) {
+    let text = ''
 
-  return [text, i]
- }
+    while (!(chars[i] === endSymbol || chars[i] === NL)) {
+      text += chars[i]
+      i++
+    }
+
+    return [text, i]
+  }
 }
 
 function generateBold(text) {
@@ -314,15 +278,15 @@ function parseLinkOrImageAttributes(i, chars) {
   let srcSwitch = false
 
   // seek until closing bracket or end of line
-  while(!(chars[i] === CLOSEDBRACKET || chars[i] ===  NL)) {
+  while (!(chars[i] === CLOSEDBRACKET || chars[i] === NL)) {
     // start accepting src when pipe encountered and skip
-    if(!(chars[i] === PIPE)) {
-      if(!srcSwitch) {
+    if (!(chars[i] === PIPE)) {
+      if (!srcSwitch) {
         text += chars[i]
-      }else{
+      } else {
         src += chars[i]
       }
-    }else{
+    } else {
       srcSwitch = true
     }
     // advance head

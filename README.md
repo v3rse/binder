@@ -148,3 +148,13 @@ generates:
   <li>third<\li>
 </ol>
 ```
+
+# Improvements
+
+- [ ] Abstract parsing from generation of file.
+ - Parsing should return object model of file
+ - Object model can be input to generator so that generators can be swapped (HTML vs Gopher vs Gemini)
+- [ ] Refactoring:
+ - How locks work for different parsers
+
+

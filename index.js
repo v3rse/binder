@@ -3,34 +3,48 @@ const { constants } = require('fs')
 const {
   access,
   mkdir,
-  readdir,
   readFile,
   writeFile,
   stat
 } = require('fs/promises')
-const { parseFile, generatePage } = require('./parser')
+const { readdirSync } = require('fs')
+const { parseFile } = require('./parser')
+const { composeAsync, isUndefined } = require('./utils')
 
-const ROOTPARENTNAME = 'home'
+const BNDREXTENSION = '.bndr'
 const HIDDENINMENU = ['CNAME']
+const LINKSDIR = 'links'
+
+const isBndrFile = file => path.extname(file) === BNDREXTENSION
 const dateFormater = new Intl.DateTimeFormat(
-    'en-US',
-    {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }
-  )
+  'en-US',
+  {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }
+)
 
-module.exports = async function main(args) {
-  let [src, obj] = args
-  src = src.replace(/\/$/, '')
-  obj = obj.replace(/\/$/, '')
 
-  const indexBody = await build(src, obj)
+
+async function pre(ctx) {
+  // clean paths
+  const pathRegex = new RegExp(`${path.sep}$`)
+  ctx.src = ctx.src.replace(pathRegex, '')
+  ctx.dest = ctx.dest.replace(pathRegex, '')
+
+  // scan the src directory for binder files
+  ctx.srcFileLists = await scanSource(ctx.src)
+
+  return ctx
+}
+
+async function post({ args, indexBody }) {
+  const [, obj] = args
   await writeFile(
     path.join(obj, `index.html`),
     generatePage(
-      {title: 'Index', date: new Date()},
+      { title: 'Index', date: new Date() },
       `
       <ul>
         ${indexBody}
@@ -44,7 +58,6 @@ module.exports = async function main(args) {
   console.log(`site built in ${obj}`)
 }
 
-
 async function exists(path) {
   try {
     await access(path, constants.F_OK)
@@ -54,57 +67,27 @@ async function exists(path) {
   return true
 }
 
-async function build(src, obj) {
-  let indexBody = ''
-  let meta = await collectMetaData(src, obj)
-
+async function build(ctx) {
   let writeOps = []
 
-  for (const entry of meta) {
-    if(!await exists(entry.destPath)) await mkdir(entry.destPath, {recursive: true})
+  // create destination is it doesn't exist
+  if (!await exists(ctx.dest)) await mkdir(ctx.dest, { recursive: true })
+  for (let i = 0; i < ctx.srcFileLists.length; i++) {
+    const page = await parseFile(ctx.srcFileLists[i].srcPath)
 
-    const homeDepth = entry.parent === ROOTPARENTNAME ? '.' : entry.destPath
-    .split(path.sep)
-    .filter(pt => pt !== entry.parent )
-    .map(_ => '..')
-    .join(path.sep)
-
-    if(entry.extension !== '.bndr') {
-      const resource = await readFile(path.join(
-        entry.srcPath,
-        `${entry.fileName}${entry.extension}`
-      ))
-      op = writeFile(
-        path.join(entry.destPath, `${entry.fileName}${entry.extension}`),
-        resource
-      )
-      writeOps.push(op)
-    }else {
-     const sheet = await parseFile(
-      path.join(
-        entry.srcPath,
-        `${entry.fileName}.bndr`
-      ))
-
-      const menu = buildMenu(entry, meta, homeDepth)
-
-      op = buildObj(sheet, entry, menu, homeDepth)
-      writeOps.push(op)
-      indexBody += `
-      <li>
-        <time datetime="${sheet.header.date}">
-          ${dateFormater.format(sheet.header.date)}
-        </time>
-        <a href="${path.join(entry.nav, entry.fileName)}.html">
-          ${sheet.header.title}
-        </a>\n
-      </li>
-      `
+    ctx.srcFileLists[i] = {
+      ...ctx.srcFileLists[i],
+      ...page
     }
+
+    console.log('entry one ==>', ctx.srcFileLists[i])
+
+    op = buildObj(ctx.srcFileLists[i], ctx.dest)
+    writeOps.push(op)
   }
 
   await Promise.all(writeOps)
-  return indexBody
+  return ctx
 }
 
 function buildMenu(metaEntry, metaData, homeDepth) {
@@ -113,57 +96,85 @@ function buildMenu(metaEntry, metaData, homeDepth) {
   )
 
   return neighbours.reduce(
-    (prev, curr) => 
-    curr.fileName === metaEntry.fileName 
-    ? `${prev}<li><strong><em>${curr.fileName}</strong></em></li>`
-    : `${prev}<li><a href="${curr.fileName}.html"><strong>${curr.fileName}</strong></a></li>`
-  , `<li><a href="${homeDepth}/index.html">back to index</a></li>`)
+    (prev, curr) =>
+      curr.fileName === metaEntry.fileName
+        ? `${prev}<li><strong><em>${curr.fileName}</strong></em></li>`
+        : `${prev}<li><a href="${curr.fileName}.html"><strong>${curr.fileName}</strong></a></li>`
+    , `<li><a href="${homeDepth}/index.html">back to index</a></li>`)
 }
 
-async function collectMetaData(src, obj) {
-  const items = await readdir(src)
+async function scanSource(src) {
+  const dir = readdirSync(src)
 
-  let fileMetaData = []
+  // create parallel operations for collecting file details
+  const jobs = dir.map(async item => {
+    const srcPath = path.join(src, item)
+    const stats = await stat(srcPath)
 
-  for (const item of items) {
-    const itemPath = path.join(src, item)
-    const stats = await stat(itemPath)
-
-    if(stats.isDirectory()) {
-      const root =  path.join(src, item)
-      const dest = path.join(obj, item)
-      const meta = await collectMetaData(root, dest)
-      fileMetaData.push(...meta)
-    } else {
-      const meta =  getMetaData(item, src, obj)
-      fileMetaData.push(meta)
+    if (stats.isFile() && isBndrFile) {
+      return {
+        createdAt: stats.birthtime,
+        updatedAt: stats.mtime,
+        srcPath,
+        fileName: path.basename(item, BNDREXTENSION)
+      }
     }
-  }
+  })
 
-  return fileMetaData
+  // filter out empty entries cause by directories
+  return (await Promise.all(jobs)).filter(details => !isUndefined(details))
 }
 
-function getMetaData(file, src, obj) {
-  let meta = {}
-  let srcParts = src.split(path.sep)
-  const [, ...navParts] = srcParts
-  const nav = navParts.join(path.sep)
-  const ext = path.extname(file)
 
-  meta['parent'] = srcParts.length === 1 ? ROOTPARENTNAME : srcParts[srcParts.length - 1]
-  meta['srcPath'] = src
-  meta['destPath'] = obj
-  meta['nav'] = nav
-  meta['fileName'] = path.basename(file, ext)
-  meta['extension'] = ext
-
-  return meta
-}
-
-async function buildObj(sheet, meta, menu, homeDepth) {
+async function buildObj(file, dest) {
+  const objPath = path.join(dest, `${file.fileName}.html`)
   return writeFile(
-    path.join(meta.destPath, `${meta.fileName}.html`),
-    generatePage(sheet.header, sheet.body, menu, homeDepth)
+    objPath,
+    generatePage(file)
   )
 }
+
+function generatePage(file) {
+  return `<!DOCTYPE html>
+    <html>
+      <head>
+        <title>${file.header.title}</title>
+        <link href="${LINKSDIR}/main.css" rel="stylesheet">
+      </head>
+      <body>
+        <header> <h1>${file.header.title}</h1> </header>
+        <nav>
+          <ul>
+            <!--MENU-->
+          </ul>
+        </nav>
+        <main>${file.body}</main>
+        <footer>
+          ${
+            file.createdAt && file.updatedAt ?
+            `
+              <p>Created on ${dateFormater.format(file.createdAt).toLowerCase()}</p>
+              <p>Updated on ${dateFormater.format(file.updatedAt).toLowerCase()}</p>
+            `
+            : ""
+          }
+        </footer>
+      </body>
+    </html>
+    `
+}
+
+function run(ctx) {
+  return composeAsync(
+    pre,
+    build,
+    // post
+  )(ctx)
+}
+
+module.exports = {
+  generatePage,
+  run,
+}
+
 
