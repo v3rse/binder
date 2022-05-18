@@ -65,10 +65,10 @@ function generatePage(file) {
         <link href="${LINKSDIR}/main.css" rel="stylesheet">
       </head>
       <body>
-        <header> <h1>${file.header.title}</h1> </header>
         <nav>
           ${file.nav}
         </nav>
+        <header> <h1>${file.header.title}</h1> </header>
         <main>${file.body}</main>
         <footer>
           ${file.createdAt && file.updatedAt ?
