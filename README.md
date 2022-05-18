@@ -47,7 +47,8 @@ defined at the start of the file. just key-value pairs
 
 ```yaml
 title: x11
-date: 2021-01-01
+# this links the current entry to another 
+parent: linux
 ---
 ```
 
@@ -76,7 +77,20 @@ generates:
 <h6>Heading 6</h6>
 ```
 
-##### links
+##### internal links
+links to another entry
+
+```
+>[entry-name]
+```
+
+generates:
+
+```
+<a href="./entry-name.html">entry name</a>
+```
+
+##### external links
 
 ```
 [text|src]

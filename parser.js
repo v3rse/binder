@@ -12,6 +12,7 @@ const PIPE = '|'
 const BANG = '!'
 const ASTERISK = '*'
 const UNDERSCORE = '_'
+const RIGHTANGLEBRACKET = '>'
 
 module.exports = {
   parseFile
@@ -216,6 +217,19 @@ function parseLine(line) {
           // parse
           const [itext, isrc, iindex] = parseLinkOrImageAttributes(i, chars)
           comp += generateImage(itext, isrc)
+
+          // set final index
+          i = iindex
+          break
+        }
+      case RIGHTANGLEBRACKET:
+        if (OPENBRACKET === next) {
+          // skip to the first 2 symbols
+          i += 2
+
+          // parse
+          const [itext, _, iindex] = parseLinkOrImageAttributes(i, chars)
+          comp += generateLink(itext.replace('-', ' '), `${itext}.html`)
 
           // set final index
           i = iindex
