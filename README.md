@@ -1,7 +1,21 @@
 # binder
-a build tool for my thoughts. not for general consumption.
+a build tool for my thoughts.
+
+not for general consumption. this initially started out as a regular static site generator for a blog see [v0](https://github.com/v3rse/binder/tree/v0).
+
+however, I thought it would be better to make a static wiki engine to capture my thoughts, learnings and projects. this project is highly influenced by [XXIIVV](wiki.xxiivv.com) and sites like it.
+
+the aim of this tool is to make writing, organising and publishing entries as easy as possible.
+
+in addition to the aims above it should be available to most broswer hence no `javascript` and minimal `css`.
+
+features include:
+- [x] simplified markup (see below)
+- [x] opinionated static site generator
+- [ ] page linking
 
 [find a live example here](http://www.nanaadane.com/)
+[find example source here](https://github.com/v3rse/site)
 
 ## installation
 ```
@@ -11,25 +25,14 @@ npm install . -g
 ## usage
 - build a site:
 ```
-binder [parse] [src] [dest]
+binder [src] [dest]
 ```
 
 try the following in this directory:
 ```
 binder docs wiki
 ```
-
-- parse a file
-```
-binder parse [file]
-```
-
-try creating an html file:
-```
-binder parse docs/example.bndr > example.html
-```
-
-__NB: you may need to change the path of the CSS stylesheet file__
+__NB: the build process requires you have a `links` and `media` directory in your source folder for css__ 
 
 ## `bndr` markup
 this is a really simplified markdown clone. It's design goal is to quickly
@@ -148,13 +151,3 @@ generates:
   <li>third<\li>
 </ol>
 ```
-
-# Improvements
-
-- [ ] Abstract parsing from generation of file.
- - Parsing should return object model of file
- - Object model can be input to generator so that generators can be swapped (HTML vs Gopher vs Gemini)
-- [ ] Refactoring:
- - How locks work for different parsers
-
-

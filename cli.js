@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const {argv} = require('process')
-const {generatePage, run} = require('./index')
+const {run} = require('./index')
 const {parseFile} = require('./parser')
 
 const [, , ...args] = argv
@@ -13,23 +13,17 @@ Usage: binder [parse] [src] [obj]`)
 }
 
 async function cli() {
-  if (args[0] === 'parse') {
-    if (!args[1]) {
-      usage('bndr file path required')
-    }
-    const parsed = await parseFile(args[1])
-    console.log(generatePage(parsed))
-  } else {
-    if (args.length < 2) {
-      usage('not enough args')
-    }
-
-    const ctx = {
-      src: args[0],
-      dest: args[1]
-    }
-    await run(ctx)
+  console.time('binder')
+  if (args.length < 2) {
+    usage('not enough args')
   }
+
+  const ctx = {
+    src: args[0],
+    dest: args[1]
+  }
+  await run(ctx)
+  console.timeEnd('binder')
 }
 
 cli().catch(err => {
