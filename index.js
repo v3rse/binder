@@ -15,6 +15,7 @@ const { composeAsync, isUndefined } = require('./utils')
 const BNDREXTENSION = '.bndr'
 const LINKSDIR = 'links'
 const MEDIADIR = 'media'
+const RECENTLIMIT = 10
 
 const isBndrFile = file => path.extname(file) === BNDREXTENSION
 const dateFormater = new Intl.DateTimeFormat(
@@ -87,12 +88,12 @@ function generatePage(file) {
 function generateCurrentNav(parent = "default", name, links) {
   const neighbours = links[parent].children
 
-  return `<ul>${neighbours.map(li => `<li><a href="${li}.html">${li === name ? `<em>${li}</em>` : li}</a></li>`).join('')}</ul>`
+  return `<ul>${neighbours.map(li => `<li><a href="${li === 'home' ? 'index' : li}.html">${li === name ? `<em>${li}</em>` : li}</a></li>`).join('')}</ul>`
 }
 
-function generateOtherNav(name = 'default', links) {
+function generateOtherNav(name, links) {
   const { children = [] } = links[name] || {}
-  return `<ul>${children.map(li => `<li><a href="${li}.html">${li}</a></li>`).join('')}</ul>`
+  return `<ul>${children.map(li => `<li><a href="${li === 'home' ? 'index' : li}.html">${li}</a></li>`).join('')}</ul>`
 }
 
 function generateNav(parent, parentsParent, name, links) {
@@ -165,7 +166,9 @@ async function parse(ctx) {
 
 async function map(ctx) {
   console.time('map')
-  const pageMap = { default: { children: [] } }
+  const pageMap = { 
+    default: { children: ['home', 'meta'] }
+  }
 
   for (const entry of ctx.index) {
     const parent = entry.header.parent || 'default'
@@ -185,6 +188,16 @@ function findEntry(name, entries) {
   return entries.filter(entry => entry.name === name)[0] || {}
 }
 
+async function buildPage(entry, dest, index, pageMap) {
+  const parentsParent = findEntry(entry.header.parent, index).header?.parent
+  entry.nav = generateNav(entry.header.parent, parentsParent, entry.name, pageMap)
+
+  return writeFile(
+    dest,
+    generatePage(entry)
+  )
+}
+
 async function build(ctx) {
   console.time('build')
   let writeOps = []
@@ -192,19 +205,54 @@ async function build(ctx) {
   await mkdirCond(ctx.dest)
 
   for (let entry of ctx.index) {
-    const parentsParent = findEntry(entry.header.parent, ctx.index).header?.parent
-    entry.nav = generateNav(entry.header.parent, parentsParent, entry.name, ctx.pageMap)
-
     const objPath = path.join(ctx.dest, `${entry.name}.html`)
-    writeOps.push(writeFile(
-      objPath,
-      generatePage(entry)
-    ))
+    writeOps.push(buildPage(entry, objPath, ctx.index, ctx.pageMap))
   }
 
   await Promise.all(writeOps)
   console.timeEnd('build')
   return ctx
+}
+
+function buildMeta(dest, index, pageMap) {
+  const body = `<ul>
+  ${index.map(entry => `<li><a href="${entry.name}.html">${entry.header.title}</a></li>`).join('\n')}
+  </ul>`
+
+  const entry = {
+    header: {title: 'Meta'},
+    body,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+  return buildPage(entry, dest, index, pageMap)
+}
+
+function buildHome(dest, index, pageMap) {
+  const body = `
+    <p>this is my small corner of the universe</p> 
+    <h2>recent</h2>
+    <ul>
+    ${index
+        .sort((a, b) => {
+          return a.updatedAt - b.updatedAt
+         })
+        .reverse()
+        .slice(0, RECENTLIMIT)
+        .map(entry => `<li>
+          <time datetime="${entry.updatedAt}">${dateFormater.format(entry.updatedAt)}</time>
+          <a href="${entry.name}.html">${entry.header.title}</a></li>`)
+        .join('\n')
+     }
+    </ul>
+  `
+  const entry = {
+    header: {title: 'Home'},
+    body,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+  return buildPage(entry, dest, index, pageMap)
 }
 
 async function post(ctx) {
@@ -218,6 +266,16 @@ async function post(ctx) {
 
   // copy for both folders
   await Promise.all([linkPaths, mediaPaths].map(paths => copyDir(...paths)))
+
+  // generate home page
+  const indexPath = path.join(ctx.dest, `index.html`)
+  const homePage = buildHome(indexPath, ctx.index, ctx.pageMap)
+
+  // generate meta page
+  const metaPath = path.join(ctx.dest, `meta.html`)
+  const metaPage = buildMeta(metaPath, ctx.index, ctx.pageMap)
+
+  await Promise.all([metaPage, homePage])
 
   console.timeEnd('post')
   console.log(`site built in ${ctx.dest}`)
