@@ -227,8 +227,8 @@ function parseLine(line, links) {
 
           // set final index
           i = iindex
-          break
         }
+        break
       case RIGHTANGLEBRACKET:
         if (OPENBRACKET === next) {
           // skip to the first 2 symbols
@@ -241,8 +241,8 @@ function parseLine(line, links) {
 
           // set final index
           i = iindex
-          break
         }
+        break
       case ASTERISK:
         i++
         const [btext, bindex] = parseBold(i, chars)

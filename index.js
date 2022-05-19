@@ -71,7 +71,6 @@ function generatePage(file) {
         </nav>
         <header> <h1>${file.header.title}</h1> </header>
         <main>${file.body}</main>
-        <hr>
         <footer>
           ${file.sources?.int.length > 0 ? 
             `<h5>wiki links\n</h5><ol>${file.sources.int.map(s => `<li><a href="${s.src}" >${s.text}</a></li>`).join('')}</ol>`: ""}
@@ -79,7 +78,6 @@ function generatePage(file) {
             `<h5>external sources\n</h5><ol>${file.sources.ext.map(s => `<li>${s.text}: <a href="${s.src}" target="_blank" rel="noopener noreferrer">${s.src}</a></li>`).join('')}</ol>`: ""}
           ${file.createdAt && file.updatedAt ?
       `
-        <hr>
               <p>Created on ${dateFormater.format(file.createdAt).toLowerCase()}</p>
               <p>Updated on ${dateFormater.format(file.updatedAt).toLowerCase()}</p>
             `
