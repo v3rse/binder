@@ -22,10 +22,13 @@ async function parseFile(filePath) {
   const content = await readFile(filePath, { encoding: 'utf8' })
   const [headerPart, bodyPart] = content.split(BODY_DELIMITER)
 
-  const sheet = {}
-  sheet['header'] = parseHeader(headerPart)
-  sheet['body'] = parseBody(bodyPart)
-  return sheet
+  const header = parseHeader(headerPart)
+  const [body, sources] = parseBody(bodyPart)
+  return {
+    header,
+    body,
+    sources
+  }
 }
 
 
@@ -54,13 +57,15 @@ function parseHeader(headerLines) {
 }
 
 function parseBody(bodyText) {
+  // collect links here
+  let links = {ext: [], int: []}
   let parsed = ''
   const bodyLines = bodyText.split(NL)
   let listLock = false
   let blockLock = false
 
-  const orderedListParser = listParser(startOList, generateOList, endOList)
-  const unorderedListParser = listParser(startUList, generateUList, endUList)
+  const orderedListParser = listParser(startOList, generateOList, endOList, links)
+  const unorderedListParser = listParser(startUList, generateUList, endUList, links)
 
   for (let i = 0; i < bodyLines.length; i++) {
     const curr = bodyLines[i].trim()
@@ -76,7 +81,7 @@ function parseBody(bodyText) {
       case HASHTAG:
         // headings
         if (!isNaN(parseInt(curr[1]))) {
-          parsed += generateHeading(curr[1], curr.substring(3, curr.length))
+          parsed += generateHeading(curr[1], curr.substring(3, curr.length), links)
         } else {
           // ordered lists
           const unlock = !(next[0] === HASHTAG)
@@ -88,7 +93,7 @@ function parseBody(bodyText) {
       case DASH:
         // unordered lists
         const unlock = !(next[0] === DASH)
-        let [val, lck] = unorderedListParser(curr, listLock, unlock)
+        let [val, lck] = unorderedListParser(curr, listLock, unlock, links)
         parsed += val
         listLock = lck
         break
@@ -112,14 +117,14 @@ function parseBody(bodyText) {
           parsed += ` ${curr}\n`
           break
         }
-        parsed += generateParagraph(curr)
+        parsed += generateParagraph(curr, links)
     }
   }
 
-  return parsed
+  return [parsed, links]
 }
 
-function listParser(start, item, end) {
+function listParser(start, item, end, links) {
   return function(currLine, locked, unlock) {
     let compiledList = ''
     let lck = locked
@@ -132,7 +137,7 @@ function listParser(start, item, end) {
     }
 
     // add list item
-    compiledList += item(text)
+    compiledList += item(text, links)
 
     // end list
     if (unlock) {
@@ -144,16 +149,16 @@ function listParser(start, item, end) {
   }
 }
 
-function generateHeading(level, text) {
-  return `<h${level}>${parseLine(text)}</h${level}>\n`
+function generateHeading(level, text, links) {
+  return `<h${level}>${parseLine(text, links)}</h${level}>\n`
 }
 
 function startOList() {
   return '<ol>\n'
 }
 
-function generateOList(text) {
-  return `  <li>${parseLine(text)}</li>\n`
+function generateOList(text, links) {
+  return `  <li>${parseLine(text, links)}</li>\n`
 }
 
 function endOList() {
@@ -164,8 +169,8 @@ function startUList() {
   return '<ul>\n'
 }
 
-function generateUList(text) {
-  return `  <li>${parseLine(text)}</li>\n`
+function generateUList(text, links) {
+  return `  <li>${parseLine(text, links)}</li>\n`
 }
 
 function endUList() {
@@ -180,11 +185,11 @@ function endCodeBlock() {
   return '</pre>\n'
 }
 
-function generateParagraph(text) {
-  return `<p>${parseLine(text)}</p>\n`
+function generateParagraph(text, links) {
+  return `<p>${parseLine(text, links)}</p>\n`
 }
 
-function parseLine(line) {
+function parseLine(line, links) {
   const chars = line.split('')
   let comp = ''
 
@@ -204,7 +209,8 @@ function parseLine(line) {
 
         // parse
         const [ltext, lsrc, lindex] = parseLinkOrImageAttributes(i, chars)
-        comp += generateLink(ltext, lsrc)
+        comp += generateExtLink(ltext, lsrc)
+        links.ext.push({text: ltext, src: lsrc})
 
         // set final index
         i = lindex
@@ -217,6 +223,7 @@ function parseLine(line) {
           // parse
           const [itext, isrc, iindex] = parseLinkOrImageAttributes(i, chars)
           comp += generateImage(itext, isrc)
+          links.ext.push({text: itext, src: isrc})
 
           // set final index
           i = iindex
@@ -229,7 +236,8 @@ function parseLine(line) {
 
           // parse
           const [itext, _, iindex] = parseLinkOrImageAttributes(i, chars)
-          comp += generateLink(itext.replace('-', ' '), `${itext}.html`)
+          comp += generateIntLink(itext.replace('-', ' '), `${itext}.html`)
+          links.int.push({text: itext.replace('-', ' '), src: `${itext}.html`})
 
           // set final index
           i = iindex
@@ -310,8 +318,12 @@ function parseLinkOrImageAttributes(i, chars) {
   return [text, src, i]
 }
 
-function generateLink(text, src) {
+function generateIntLink(text, src) {
   return `<a href=${src}>${text}</a>`
+}
+
+function generateExtLink(text, src) {
+  return `<a href=${src} target="_blank" rel="noopener norefferer">${text}</a>`
 }
 
 function generateImage(text, src) {
