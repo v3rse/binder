@@ -12,7 +12,7 @@ in addition to the aims above it should be available to most broswer hence no `j
 features include:
 - [x] simplified markup (see below)
 - [x] opinionated static site generator
-- [ ] page linking
+- [x] page linking
 
 [find a live example here](http://www.nanaadane.com/)
 [find example source here](https://github.com/v3rse/site)
