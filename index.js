@@ -44,7 +44,7 @@ async function indexSource(src) {
     const srcPath = path.join(src, item)
     const stats = await stat(srcPath)
 
-    if (stats.isFile() && isBndrFile) {
+    if (stats.isFile() && isBndrFile(item)) {
       return {
         createdAt: stats.birthtime,
         updatedAt: stats.mtime,
@@ -92,16 +92,32 @@ function generateCurrentNav(parent = "default", name, links) {
 }
 
 function generateOtherNav(name, links) {
-  const { children = [] } = links[name] || {}
+  const {children} = links[name]
   return `<ul>${children.map(li => `<li><a href="${li === 'home' ? 'index' : li}.html">${li}</a></li>`).join('')}</ul>`
 }
 
-function generateNav(parent, parentsParent, name, links) {
-  return `
-  ${!parent ? '' : generateOtherNav(parentsParent, links)}
-  ${generateCurrentNav(parent, name, links)}
-  ${generateOtherNav(name, links)}
-  `
+function generateNav(parent, parentsParent = "default", parentsParentsParent = "default", name, links) {
+  const navList = []
+
+  if (!parent) {
+    navList.push(generateCurrentNav("default", name, links))
+  }else {
+    navList.push(generateOtherNav(parentsParent, links))
+    navList.push(generateCurrentNav(parent, name, links))
+  }
+
+  // has children
+  if(links[name]) {
+    navList.push(generateOtherNav(name, links))
+  }else{
+    // if parent has a parent when it has no childre add that
+    // except for root level
+    if(parentsParent && parentsParent !== 'default') {
+      navList.unshift(generateOtherNav(parentsParentsParent, links))
+    }
+  }
+
+  return navList.join('\n')
 }
 
 async function mkdirCond(path) {
@@ -190,7 +206,8 @@ function findEntry(name, entries) {
 
 async function buildPage(entry, dest, index, pageMap) {
   const parentsParent = findEntry(entry.header.parent, index).header?.parent
-  entry.nav = generateNav(entry.header.parent, parentsParent, entry.name, pageMap)
+  const parentsParentsParent = findEntry(parentsParent, index).header?.parent
+  entry.nav = generateNav(entry.header.parent, parentsParent, parentsParentsParent, entry.name, pageMap)
 
   return writeFile(
     dest,
