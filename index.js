@@ -17,6 +17,12 @@ const BNDREXTENSION = '.bndr'
 const LINKSDIR = 'links'
 const MEDIADIR = 'media'
 const RECENTLIMIT = 10
+const SITENAME = 'nanaadane\'s wiki'
+const SITEDESCRIPTION = 'this is my small corner of the universe'
+const SITEURL = 'https://www.nanaadane.com/'
+const SITERSSPATH = path.join(LINKSDIR, 'rss.xml')
+const SITEAUTHOR = 'Nana Adane'
+
 
 const isBndrFile = file => path.extname(file) === BNDREXTENSION
 const dateFormater = new Intl.DateTimeFormat(
@@ -65,6 +71,7 @@ function generatePage(file) {
       <head>
         <title>${file.header.title}</title>
         <link href="${LINKSDIR}/main.css" rel="stylesheet">
+        <link rel=alternate title="${SITENAME}" type=application/rss+xml href="${SITERSSPATH}">
       </head>
       <body>
         <nav>
@@ -73,7 +80,7 @@ function generatePage(file) {
         <header> <h1>${file.header.title}</h1> </header>
         <main>
           ${file.body}
-          ${file.header.isportal ? (file.portalEntries || "" ) : ""}
+          ${file.header.isportal ? (file.portalEntries || "") : ""}
         </main>
         <footer>
           ${file.sources?.int.length > 0 ?
@@ -87,6 +94,7 @@ function generatePage(file) {
             `
       : ""
     }
+        <p><a href="${SITERSSPATH}">RSS Feed</a></p>
         </footer>
       </body>
     </html>
@@ -227,7 +235,7 @@ function buildPortalEntries(entryName, pageMap, index) {
   const page = pageMap[entryName] || []
   const childEntries = page.children.map(child => {
     const subentry = findEntry(child, index)
-    
+
     return `<li>
       <a href="${child}.html">${subentry.header.title}</a>: ${subentry.header.description}
 </li>`
@@ -274,7 +282,7 @@ function buildMeta(dest, index, pageMap) {
 
 function buildHome(dest, index, pageMap) {
   const body = `
-    <p>this is my small corner of the universe</p> 
+    <p>${SITEDESCRIPTION}</p> 
     <h2>recent</h2>
     <ul>
     ${index
@@ -294,12 +302,55 @@ function buildHome(dest, index, pageMap) {
     </ul>
   `
   const entry = {
-    header: { title: 'Home' },
+    header: { title: SITENAME },
     body,
     createdAt: new Date(),
     updatedAt: new Date()
   }
   return buildPage(entry, dest, index, pageMap)
+}
+
+function buildRssFeed(dest, index) {
+  const now = new Date()
+  const timeToLiveMinutes = 24 * 60
+  const rss = `<rss version="2.0">
+<channel>
+ <title>${SITENAME}</title>
+ <description>${SITEDESCRIPTION}</description>
+ <link>${SITEURL}</link>
+ <copyright>2022 ${SITEAUTHOR} All rights reserved</copyright>
+ <lastBuildDate>${now}</lastBuildDate>
+ <pubDate>${now}</pubDate>
+ <ttl>${timeToLiveMinutes}</ttl>
+ <generator>binder</generator>
+
+${index
+      .sort((a, b) => {
+        const aDate = a.header.crtdate || a.createdAt
+        const bDate = b.header.crtdate || b.createdAt
+        return bDate - aDate
+      })
+      .map((entry, i, arr) => {
+        const date = entry.header.crtdate || entry.createdAt
+        return `<item>
+  <title>${entry.header.title}</title>
+  <description>${entry.header.description}</description>
+  <author>${SITEAUTHOR}</author>
+  <link>${SITEURL + entry.name}.html</link>
+  <guid isPermaLink="false">${arr.length - i}</guid>
+  <pubDate>${date}</pubDate>
+ </item>`
+      })
+      .join('\n')
+    }
+</channel>
+</rss>
+`
+
+  return writeFile(
+    dest,
+    rss
+  )
 }
 
 async function post(ctx) {
@@ -322,7 +373,11 @@ async function post(ctx) {
   const metaPath = path.join(ctx.dest, `meta.html`)
   const metaPage = buildMeta(metaPath, ctx.index, ctx.pageMap)
 
-  await Promise.all([metaPage, homePage])
+  // generate rss feed
+  const rssDest = path.join(ctx.dest, SITERSSPATH)
+  const rssPage = buildRssFeed(rssDest, ctx.index)
+
+  await Promise.all([metaPage, homePage, rssPage])
 
   console.timeEnd('post')
   console.log(`site built in ${ctx.dest}`)

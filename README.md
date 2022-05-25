@@ -14,7 +14,7 @@ features include:
 - [x] opinionated static site generator
 - [x] page linking
 - [x] portal pages (used to group topics of similar content)
-- [ ] rss feed generation
+- [x] rss feed generation
 
 [find a live example here](http://www.nanaadane.com/)
 [find example source here](https://github.com/v3rse/site)
