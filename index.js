@@ -73,13 +73,13 @@ function generatePage(file) {
         <header> <h1>${file.header.title}</h1> </header>
         <main>${file.body}</main>
         <footer>
-          ${file.sources?.int.length > 0 ? 
-            `<h5>wiki links\n</h5><ol>${file.sources.int.map(s => `<li><a href="${s.src}" >${s.text}</a></li>`).join('')}</ol>`: ""}
-          ${file.sources?.ext.length > 0 ? 
-            `<h5>external sources\n</h5><ol>${file.sources.ext.map(s => `<li>${s.text}: <a href="${s.src}" target="_blank" rel="noopener noreferrer">${s.src}</a></li>`).join('')}</ol>`: ""}
+          ${file.sources?.int.length > 0 ?
+      `<h5>wiki links\n</h5><ol>${file.sources.int.map(s => `<li><a href="${s.src}" >${s.text}</a></li>`).join('')}</ol>` : ""}
+          ${file.sources?.ext.length > 0 ?
+      `<h5>external sources\n</h5><ol>${file.sources.ext.map(s => `<li>${s.text}: <a href="${s.src}" target="_blank" rel="noopener noreferrer">${s.src}</a></li>`).join('')}</ol>` : ""}
           ${file.createdAt && file.updatedAt ?
       `
-              <p>Created on ${dateFormater.format(file.createdAt).toLowerCase()}</p>
+              <p>Created on ${dateFormater.format(file.header.crtdate || file.createdAt).toLowerCase()}</p>
               <p>Updated on ${dateFormater.format(file.updatedAt).toLowerCase()}</p>
             `
       : ""
@@ -97,7 +97,7 @@ function generateCurrentNav(parent = "default", name, links) {
 }
 
 function generateOtherNav(name, links) {
-  const {children} = links[name]
+  const { children } = links[name]
   return `<ul>${children.map(li => `<li><a href="${li === 'home' ? 'index' : li}.html">${li}</a></li>`).join('')}</ul>`
 }
 
@@ -106,18 +106,18 @@ function generateNav(parent, parentsParent = "default", parentsParentsParent = "
 
   if (!parent) {
     navList.push(generateCurrentNav("default", name, links))
-  }else {
+  } else {
     navList.push(generateOtherNav(parentsParent, links))
     navList.push(generateCurrentNav(parent, name, links))
   }
 
   // has children
-  if(links[name]) {
+  if (links[name]) {
     navList.push(generateOtherNav(name, links))
-  }else{
+  } else {
     // if parent has a parent when it has no childre add that
     // except for root level
-    if(parentsParent && parentsParent !== 'default') {
+    if (parentsParent && parentsParent !== 'default') {
       navList.unshift(generateOtherNav(parentsParentsParent, links))
     }
   }
@@ -187,7 +187,7 @@ async function parse(ctx) {
 
 async function map(ctx) {
   console.time('map')
-  const pageMap = { 
+  const pageMap = {
     default: { children: ['home', 'meta'] }
   }
 
@@ -242,7 +242,7 @@ function buildMeta(dest, index, pageMap) {
   </ul>`
 
   const entry = {
-    header: {title: 'Meta'},
+    header: { title: 'Meta' },
     body,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -256,20 +256,23 @@ function buildHome(dest, index, pageMap) {
     <h2>recent</h2>
     <ul>
     ${index
-        .sort((a, b) => {
-          return a.updatedAt - b.updatedAt
-         })
-        .reverse()
-        .slice(0, RECENTLIMIT)
-        .map(entry => `<li>
-          <time datetime="${entry.updatedAt}">${dateFormater.format(entry.updatedAt)}</time>
-          <a href="${entry.name}.html">${entry.header.title}</a></li>`)
-        .join('\n')
-     }
+      .sort((a, b) => {
+        const aDate = a.header.crtdate || a.createdAt
+        const bDate = b.header.crtdate || b.createdAt
+        return aDate - bDate
+      })
+      .reverse()
+      .slice(0, RECENTLIMIT)
+      .map(entry => {
+        const date = entry.header.crtdate || entry.createdAt
+        return `<li> <time datetime="${date}">${dateFormater.format(date)}</time> <a href="${entry.name}.html">${entry.header.title}</a></li>`
+      })
+      .join('\n')
+    }
     </ul>
   `
   const entry = {
-    header: {title: 'Home'},
+    header: { title: 'Home' },
     body,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -328,7 +331,7 @@ async function createEntry(name) {
   const isPortal = (await rl.question('portal(y/n)? (default: n) ')) === 'y' ? true : false
   rl.close()
 
-  const crtDate = new Date().toISOString().replace('T',' ').split('.')[0]
+  const crtDate = new Date().toISOString().replace('T', ' ').split('.')[0]
 
   const content = `${parent ? `parent: ${parent}\n` : ""}title: ${title}
 description: ${description}

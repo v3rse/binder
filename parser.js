@@ -44,9 +44,11 @@ function parseHeader(headerLines) {
       value = value.trim()
 
       switch (key) {
-        case 'date':
+        case 'crtdate':
           value = new Date(value)
           break
+        case 'isportal':
+          value = value === 'true'
       }
 
       header[key] = value
