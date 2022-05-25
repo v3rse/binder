@@ -232,8 +232,8 @@ async function buildPage(entry, dest, index, pageMap) {
 }
 
 function buildPortalEntries(entryName, pageMap, index) {
-  const page = pageMap[entryName] || []
-  const childEntries = page.children.map(child => {
+  const pageChildren = pageMap[entryName]?.children || []
+  const childEntries = pageChildren.map(child => {
     const subentry = findEntry(child, index)
 
     return `<li>
