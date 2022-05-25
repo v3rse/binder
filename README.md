@@ -13,6 +13,8 @@ features include:
 - [x] simplified markup (see below)
 - [x] opinionated static site generator
 - [x] page linking
+- [ ] portal pages (used to group topics of similar content)
+- [ ] rss feed generation
 
 [find a live example here](http://www.nanaadane.com/)
 [find example source here](https://github.com/v3rse/site)
@@ -34,6 +36,20 @@ binder docs wiki
 ```
 __NB: the build process requires you have a `links` and `media` directory in your source folder for css__ 
 
+- initialize entry file
+```
+binder entry [name]
+```
+
+this provides you wizard
+```bash
+$ binder entry sample                                                           main ⬆
+title? (default: sample)
+parent? (default: none)
+description? (default: none)
+portal(y/n)? (default: n) y
+```
+
 ## `bndr` markup
 this is a really simplified markdown clone. It's design goal is to quickly
 allow me to write quickly and then generate some relatively readable HTML files
@@ -46,9 +62,16 @@ find examples [here](docs/example.bndr).
 defined at the start of the file. just key-value pairs
 
 ```yaml
-title: x11
-# this links the current entry to another 
+# this links the current entry to another (optional)
 parent: linux
+# this the displayed title
+title: x11
+# this is the displayed description
+description: client-server architecture with communication...
+# this is the creation date for the entry
+crtdate: 2022-05-25 04:08:00
+# this is flag to indicate is the entry is a portal
+isportal: true
 ---
 ```
 

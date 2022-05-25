@@ -1,5 +1,6 @@
 const path = require('path')
 const { constants } = require('fs')
+const readline = require('readline/promises')
 const {
   access,
   mkdir,
@@ -319,6 +320,30 @@ function run(ctx) {
   )(ctx)
 }
 
+async function createEntry(name) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+  const title = (await rl.question(`title? (default: ${name}) `)) || name
+  const parent = await rl.question('parent? (default: none) ')
+  const description = await rl.question('description? (default: none) ')
+  const isPortal = (await rl.question('portal(y/n)? (default: n) ')) === 'y' ? true : false
+  rl.close()
+
+  const crtDate = new Date().toISOString().replace('T',' ').split('.')[0]
+
+  const content = `${parent ? `parent: ${parent}\n` : ""}title: ${title}
+description: ${description}
+crtdate: ${crtDate}
+isportal: ${isPortal}
+---
+`
+
+  return writeFile(
+    `${name}.bndr`,
+    content
+  )
+}
+
 module.exports = {
   run,
+  createEntry,
 }
