@@ -13,7 +13,7 @@ features include:
 - [x] simplified markup (see below)
 - [x] opinionated static site generator
 - [x] page linking
-- [ ] portal pages (used to group topics of similar content)
+- [x] portal pages (used to group topics of similar content)
 - [ ] rss feed generation
 
 [find a live example here](http://www.nanaadane.com/)

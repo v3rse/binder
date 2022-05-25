@@ -71,7 +71,10 @@ function generatePage(file) {
           ${file.nav}
         </nav>
         <header> <h1>${file.header.title}</h1> </header>
-        <main>${file.body}</main>
+        <main>
+          ${file.body}
+          ${file.header.isportal ? (file.portalEntries || "" ) : ""}
+        </main>
         <footer>
           ${file.sources?.int.length > 0 ?
       `<h5>wiki links\n</h5><ol>${file.sources.int.map(s => `<li><a href="${s.src}" >${s.text}</a></li>`).join('')}</ol>` : ""}
@@ -220,6 +223,21 @@ async function buildPage(entry, dest, index, pageMap) {
   )
 }
 
+function buildPortalEntries(entryName, pageMap, index) {
+  const page = pageMap[entryName] || []
+  const childEntries = page.children.map(child => {
+    const subentry = findEntry(child, index)
+    
+    return `<li>
+      <a href="${child}.html">${subentry.header.title}</a>: ${subentry.header.description}
+</li>`
+  }).join('\n')
+
+  return `<ul>
+  ${childEntries}
+  </ul>`
+}
+
 async function build(ctx) {
   console.time('build')
   let writeOps = []
@@ -228,6 +246,10 @@ async function build(ctx) {
 
   for (let entry of ctx.index) {
     const objPath = path.join(ctx.dest, `${entry.name}.html`)
+    // build portal entries if portal
+    if (entry.header.isportal) {
+      entry.portalEntries = buildPortalEntries(entry.name, ctx.pageMap, ctx.index)
+    }
     writeOps.push(buildPage(entry, objPath, ctx.index, ctx.pageMap))
   }
 
