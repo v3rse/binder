@@ -74,28 +74,35 @@ function generatePage(file) {
         <link rel=alternate title="${SITENAME}" type=application/rss+xml href="${SITERSSPATH}">
       </head>
       <body>
-        <nav>
-          ${file.nav}
-        </nav>
-        <header> <h1>${file.header.title}</h1> </header>
-        <main>
-          ${file.body}
-          ${file.header.isportal ? (file.portalEntries || "") : ""}
-        </main>
-        <footer>
-          ${file.sources?.int.length > 0 ?
-      `<h5>wiki links\n</h5><ol>${file.sources.int.map(s => `<li><a href="${s.src}" >${s.text}</a></li>`).join('')}</ol>` : ""}
-          ${file.sources?.ext.length > 0 ?
-      `<h5>external sources\n</h5><ol>${file.sources.ext.map(s => `<li>${s.text}: <a href="${s.src}" target="_blank" rel="noopener noreferrer">${s.src}</a></li>`).join('')}</ol>` : ""}
-          ${file.createdAt && file.updatedAt ?
-      `
-              <p>Created on ${dateFormater.format(file.header.crtdate || file.createdAt).toLowerCase()}</p>
-              <p>Updated on ${dateFormater.format(file.updatedAt).toLowerCase()}</p>
-            `
-      : ""
-    }
-        <p><a href="${SITERSSPATH}">RSS Feed</a></p>
-        </footer>
+        <div class="container">
+          <header>
+            <nav>
+              ${file.nav}
+            </nav>
+            <a href="index.html">${SITENAME}</a>
+          </header>
+          <main>
+            <h1>${file.name != 'home'? file.header.title : ''}</h1>
+            ${file.body}
+            ${file.header.isportal ? (file.portalEntries || "") : ""}
+
+
+            ${file.sources?.int.length > 0 ?
+        `<h5>wiki links\n</h5><ol>${file.sources.int.map(s => `<li><a href="${s.src}" >${s.text}</a></li>`).join('')}</ol>` : ""}
+            ${file.sources?.ext.length > 0 ?
+        `<h5>external sources\n</h5><ol>${file.sources.ext.map(s => `<li>${s.text}: <a href="${s.src}" target="_blank" rel="noopener noreferrer">${s.src}</a></li>`).join('')}</ol>` : ""}
+          </main>
+          <footer>
+            ${file.createdAt && file.updatedAt ?
+        `
+                <p>Created on ${dateFormater.format(file.header.crtdate || file.createdAt).toLowerCase()}</p>
+                <p>Updated on ${dateFormater.format(file.updatedAt).toLowerCase()}</p>
+              `
+        : ""
+      }
+          <p><a href="${SITERSSPATH}" id="rss-link">RSS Feed</a></p>
+          </footer>
+      </div>
       </body>
     </html>
     `
@@ -199,7 +206,7 @@ async function parse(ctx) {
 async function map(ctx) {
   console.time('map')
   const pageMap = {
-    default: { children: ['home', 'meta'] }
+    default: { children: ['meta'] }
   }
 
   for (const entry of ctx.index) {
@@ -302,6 +309,7 @@ function buildHome(dest, index, pageMap) {
     </ul>
   `
   const entry = {
+    name: 'home',
     header: { title: SITENAME },
     body,
     createdAt: new Date(),
