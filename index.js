@@ -279,6 +279,7 @@ function buildMeta(dest, index, pageMap) {
   </ul>`
 
   const entry = {
+    name: 'meta',
     header: { title: 'Meta' },
     body,
     createdAt: new Date(),
