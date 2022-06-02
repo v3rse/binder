@@ -58,6 +58,10 @@ function parseHeader(headerLines) {
   return header
 }
 
+function encodeHtmlCharacters(s) {
+  return s.replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+}
+
 function parseBody(bodyText) {
   // collect links here
   let links = {ext: [], int: []}
@@ -65,6 +69,7 @@ function parseBody(bodyText) {
   const bodyLines = bodyText.split(NL)
   let listLock = false
   let blockLock = false
+  let blockText = ""
 
   const orderedListParser = listParser(startOList, generateOList, endOList, links)
   const unorderedListParser = listParser(startUList, generateUList, endUList, links)
@@ -108,15 +113,17 @@ function parseBody(bodyText) {
             blockLock = true
           } else {
             // end
-            parsed += endCodeBlock()
+            parsed += encodeHtmlCharacters(blockText) + endCodeBlock()
             blockLock = false
+            blockText = ""
           }
           break
         }
       default:
         if (blockLock) {
-          // handle block items
-          parsed += ` ${curr}\n`
+          // handle block items 
+          // not using curr here because trim removes desire whitespace
+          blockText += ` ${bodyLines[i]}\n`
           break
         }
         parsed += generateParagraph(curr, links)

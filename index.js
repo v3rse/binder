@@ -322,7 +322,8 @@ function buildHome(dest, index, pageMap) {
 function buildRssFeed(dest, index) {
   const now = new Date()
   const timeToLiveMinutes = 24 * 60
-  const rss = `<rss version="2.0">
+  const rss = `<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
 <channel>
  <title>${SITENAME}</title>
  <description>${SITEDESCRIPTION}</description>
