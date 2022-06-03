@@ -17,7 +17,7 @@ const BNDREXTENSION = '.bndr'
 const LINKSDIR = 'links'
 const MEDIADIR = 'media'
 const RECENTLIMIT = 10
-const SITENAME = 'nanaadane\'s wiki'
+const SITENAME = 'rwx'
 const SITEDESCRIPTION = 'this is my small corner of the universe'
 const SITEURL = 'https://www.nanaadane.com/'
 const SITERSSPATH = path.join(LINKSDIR, 'rss.xml')
@@ -74,41 +74,42 @@ function generatePage(file) {
         <link rel=alternate title="${SITENAME}" type=application/rss+xml href="${SITERSSPATH}">
       </head>
       <body>
-        <div class="container">
-          <header>
-            <nav>
-              ${file.nav}
-            </nav>
-            <a href="index.html">${SITENAME}</a>
-          </header>
-          <main>
-            <h1>${file.name != 'home'? file.header.title : ''}</h1>
-            ${file.body}
-            ${file.header.isportal ? (file.portalEntries || "") : ""}
+        <header>
+          <a href="index.html" style="font-family: monospace;">${SITENAME}</a>
+          <nav>
+            ${file.nav}
+          </nav>
+        </header>
+        <main>
+          <h1>${file.name != 'home' ? file.header.title : ''}</h1>
+          ${file.body}
+          ${file.header.isportal ? (file.portalEntries || "") : ""}
 
 
-            ${file.sources?.int.length > 0 ?
-        `<h5>wiki links\n</h5><ol>${file.sources.int.map(s => `<li><a href="${s.src}" >${s.text}</a></li>`).join('')}</ol>` : ""}
-            ${file.sources?.ext.length > 0 ?
-        `<h5>external sources\n</h5><ol>${file.sources.ext.map(s => `<li>${s.text}: <a href="${s.src}" target="_blank" rel="noopener noreferrer">${s.src}</a></li>`).join('')}</ol>` : ""}
-          </main>
-          <footer>
-            ${file.createdAt && file.updatedAt ?
-        `
-                <p>Created on ${dateFormater.format(file.header.crtdate || file.createdAt).toLowerCase()}</p>
-                <p>Updated on ${dateFormater.format(file.updatedAt).toLowerCase()}</p>
-              `
-        : ""
-      }
+          ${file.sources?.int.length > 0 ?
+      `<h5>wiki links\n</h5><ol>${file.sources.int.map(s => `<li><a href="${s.src}" >${s.text}</a></li>`).join('')}</ol>` : ""}
+          ${file.sources?.ext.length > 0 ?
+      `<h5>external sources\n</h5><ol>${file.sources.ext.map(s => `<li>${s.text}: <a href="${s.src}" target="_blank" rel="noopener noreferrer">${s.src}</a></li>`).join('')}</ol>` : ""}
+
+
+        </main>
+        <footer>
+          <p>${SITEAUTHOR} © ${new Date().getFullYear()}</p>
+          ${file.createdAt && file.updatedAt ?
+      `
+              <p>Created on ${dateFormater.format(file.header.crtdate || file.createdAt)}</p>
+              <p>Updated on ${dateFormater.format(file.updatedAt)}</p>
+            `
+      : ""
+    }
           <p><a href="${SITERSSPATH}" id="rss-link">RSS Feed</a></p>
-          </footer>
-      </div>
+        </footer>
       </body>
     </html>
     `
 }
 
-function generateCurrentNav(parent = "default", name, links) {
+function generatePathNav(parent = "default", name, links) {
   const neighbours = links[parent].children
 
   return `<ul>${neighbours.map(li => `<li><a href="${li === 'home' ? 'index' : li}.html">${li === name ? `<em>${li}</em>` : li}</a></li>`).join('')}</ul>`
@@ -123,20 +124,20 @@ function generateNav(parent, parentsParent = "default", parentsParentsParent = "
   const navList = []
 
   if (!parent) {
-    navList.push(generateCurrentNav("default", name, links))
+    navList.push(generatePathNav("default", name, links))
   } else {
-    navList.push(generateOtherNav(parentsParent, links))
-    navList.push(generateCurrentNav(parent, name, links))
+    navList.push(generatePathNav(parentsParent, parent, links))
+    navList.push(generatePathNav(parent, name, links))
   }
 
   // has children
   if (links[name]) {
     navList.push(generateOtherNav(name, links))
   } else {
-    // if parent has a parent when it has no childre add that
+    // if parent has a parent when it has no children add that
     // except for root level
     if (parentsParent && parentsParent !== 'default') {
-      navList.unshift(generateOtherNav(parentsParentsParent, links))
+      navList.unshift(generatePathNav(parentsParentsParent, parentsParent, links))
     }
   }
 
