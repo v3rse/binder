@@ -1,17 +1,10 @@
-const path = require('path')
-const { constants } = require('fs')
-const readline = require('readline/promises')
-const {
-  access,
-  mkdir,
-  readdir,
-  readFile,
-  writeFile,
-  stat
-} = require('fs/promises')
-const { readdirSync, existsSync } = require('fs')
-const { parseFile } = require('./parser')
-const { composeAsync, isUndefined } = require('./utils')
+import path from 'path'
+import { constants } from 'fs'
+import readline from 'readline/promises'
+import { access, mkdir, readdir, readFile, writeFile, stat } from 'fs/promises'
+import { readdirSync, existsSync } from 'fs'
+import { parseFile } from './parser'
+import { composeAsync, isUndefined } from './utils'
 
 const BNDREXTENSION = '.bndr'
 const LINKSDIR = 'links'
@@ -121,7 +114,7 @@ function generateOtherNav(name, links) {
 }
 
 function generateNav(parent, parentsParent = "default", parentsParentsParent = "default", name, links) {
-  const navList = []
+  const navList: string[] = []
 
   if (!parent) {
     navList.push(generatePathNav("default", name, links))
@@ -154,7 +147,7 @@ async function copyDir(from, to) {
   await mkdirCond(to)
 
   const items = await readdir(from)
-  const ops = []
+  const ops: Promise<any>[] = []
 
   for (const item of items) {
     const stats = await stat(path.join(from, item))
@@ -168,8 +161,7 @@ async function copyDir(from, to) {
       // read and write file to new location
       // TODO: might do this with a stream to see the performance diff
       const file = await readFile(path.join(from, item))
-      op = writeFile(path.join(to, item), file)
-      ops.push(op)
+      ops.push(writeFile(path.join(to, item), file))
     }
   }
 
@@ -256,7 +248,7 @@ function buildPortalEntries(entryName, pageMap, index) {
 
 async function build(ctx) {
   console.time('build')
-  let writeOps = []
+  let writeOps: Promise<void>[] = []
 
   await mkdirCond(ctx.dest)
 
@@ -374,7 +366,7 @@ async function post(ctx) {
   const mediaPaths = rootPaths.map(p => path.join(p, MEDIADIR))
 
   // copy for both folders
-  await Promise.all([linkPaths, mediaPaths].map(paths => copyDir(...paths)))
+  await Promise.all([linkPaths, mediaPaths].map(paths => copyDir(...paths as [string, string])))
 
   // generate home page
   const indexPath = path.join(ctx.dest, `index.html`)
@@ -394,7 +386,7 @@ async function post(ctx) {
   console.log(`site built in ${ctx.dest}`)
 }
 
-function run(ctx) {
+export function run(ctx) {
   if (!existsSync(path.join(ctx.src, LINKSDIR))) {
     throw new Error(`expected "${LINKSDIR}" directory to exist`)
   }
@@ -411,7 +403,7 @@ function run(ctx) {
   )(ctx)
 }
 
-async function createEntry(name) {
+export async function createEntry(name) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
   const title = (await rl.question(`title? (default: ${name}) `)) || name
   const parent = await rl.question('parent? (default: none) ')
@@ -432,9 +424,4 @@ isportal: ${isPortal}
     `${name}.bndr`,
     content
   )
-}
-
-module.exports = {
-  run,
-  createEntry,
 }

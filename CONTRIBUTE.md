@@ -48,7 +48,7 @@ npm run build
 To run the project, use the following command:
 
 ```sh
-npm start -- docs wiki
+npm start docs wiki
 ```
 ### Pull requests
 

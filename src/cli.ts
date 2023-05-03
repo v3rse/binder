@@ -1,8 +1,5 @@
-#!/usr/bin/env node
-
-const {argv} = require('process')
-const {run, createEntry} = require('./index')
-const {parseFile} = require('./parser')
+import { argv } from 'process'
+import { run, createEntry } from './index'
 
 const [, , ...args] = argv
 

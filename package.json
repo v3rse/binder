@@ -1,13 +1,25 @@
 {
-  "name": "binder",
+  "name": "@v3rse/binder",
   "version": "1.0.0",
-  "description": "",
-  "main": "cli.js",
+  "description": "a build tool for my thoughts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "clean": "rimraf ./bin",
+    "cb": "npm run clean && npm run build",
+    "preinstall": "npm run cb",
+    "start": "node ./bin/cli.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "version:major": "npm version major -m 'v%s'",
+    "version:minor": "npm version minor -m 'v%s'",
+    "version:patch": "npm version patch -m 'v%s'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "bin": "./cli.js"
+  "bin": "./bin/binder.js",
+  "devDependencies": {
+    "@types/node": "^18.16.3",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.4"
+  }
 }

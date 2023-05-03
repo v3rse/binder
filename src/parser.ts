@@ -1,4 +1,4 @@
-const { readFile, } = require('fs/promises')
+import { readFile } from 'fs/promises'
 
 const BODY_DELIMITER = '---'
 const NL = /\r?\n/
@@ -14,11 +14,7 @@ const ASTERISK = '*'
 const UNDERSCORE = '_'
 const RIGHTANGLEBRACKET = '>'
 
-module.exports = {
-  parseFile
-}
-
-async function parseFile(filePath) {
+export async function parseFile(filePath: string) {
   const content = await readFile(filePath, { encoding: 'utf8' })
   const [headerPart, bodyPart] = content.split(BODY_DELIMITER)
 
@@ -32,13 +28,13 @@ async function parseFile(filePath) {
 }
 
 
-function parseHeader(headerLines) {
+function parseHeader(headerLines: string) {
   const ASSIGNMENT_DELIMITER = ':'
-  const header = {}
+  const header: any = {}
   for (const headerLine of headerLines.split(NL)) {
     const delimiterIndex = headerLine.indexOf(ASSIGNMENT_DELIMITER)
     const key = headerLine.substring(0, delimiterIndex)
-    let value = headerLine.substring(delimiterIndex + 1)
+    let value: any = headerLine.substring(delimiterIndex + 1)
 
     if (key) {
       value = value.trim()
@@ -58,11 +54,11 @@ function parseHeader(headerLines) {
   return header
 }
 
-function encodeHtmlCharacters(s) {
+function encodeHtmlCharacters(s: string) {
   return s.replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 }
 
-function parseBody(bodyText) {
+function parseBody(bodyText: string) {
   // collect links here
   let links = {ext: [], int: []}
   let parsed = ''
@@ -100,7 +96,7 @@ function parseBody(bodyText) {
       case DASH:
         // unordered lists
         const unlock = !(next[0] === DASH)
-        let [val, lck] = unorderedListParser(curr, listLock, unlock, links)
+        let [val, lck] = unorderedListParser(curr, listLock, unlock)
         parsed += val
         listLock = lck
         break
@@ -133,8 +129,8 @@ function parseBody(bodyText) {
   return [parsed, links]
 }
 
-function listParser(start, item, end, links) {
-  return function(currLine, locked, unlock) {
+function listParser(start: any, item: any, end: any, links: any) {
+  return function(currLine: any, locked: any, unlock: any) {
     let compiledList = ''
     let lck = locked
     const text = currLine.substring(2, currLine.length)
