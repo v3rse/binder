@@ -23,7 +23,7 @@
     "node": ">= 18.12.1"
   },
   "bin": {
-    "binder": "./bin/binder.js"
+    "binder": "bin/cli.js"
   },
   "devDependencies": {
     "@types/node": "^18.16.3",
