@@ -13,8 +13,11 @@
     "version:minor": "npm version minor -m 'v%s'",
     "version:patch": "npm version patch -m 'v%s'"
   },
+  "repository": {
+    "url": "https://github.com/v3rse/binder"
+  },
   "keywords": [],
-  "author": "",
+  "author": "Nana Adane (v3rse)",
   "license": "MIT",
   "engines": {
     "node": ">= 18.12.1"
@@ -26,5 +29,8 @@
     "@types/node": "^18.16.3",
     "rimraf": "^5.0.0",
     "typescript": "^5.0.4"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   }
 }
