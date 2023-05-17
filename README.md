@@ -43,7 +43,7 @@ binder entry [name]
 
 this provides you wizard
 ```bash
-$ binder entry sample                                                           main ⬆
+$ binder entry sample                                                          
 title? (default: sample)
 parent? (default: none)
 description? (default: none)

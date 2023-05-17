@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { argv } from 'process'
 import { run, createEntry } from './index'
 
