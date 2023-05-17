@@ -6,7 +6,7 @@
     "build": "tsc",
     "clean": "rimraf ./bin",
     "cb": "npm run clean && npm run build",
-    "preinstall": "npm run cb",
+    "prepublish": "npm run cb",
     "start": "./bin/cli.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "version:major": "npm version major -m 'v%s'",
