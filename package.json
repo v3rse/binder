@@ -1,6 +1,6 @@
 {
   "name": "@v3rse/binder",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "a build tool for thoughts. not for public consumption",
   "scripts": {
     "build": "tsc",
