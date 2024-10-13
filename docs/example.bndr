@@ -34,6 +34,9 @@ code block
 # second
 # third
 
+#2 Embedding HTML
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/argpSxB1NQE?si=40u3B3U1imTAH7gs&amp;controls=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 #2 Mix it up
 This is a  random document meant for testing. More random stuff. Life you have to be be *bold* and _emphasize_ what is in your `code`. Find out more [here|y.html].
 

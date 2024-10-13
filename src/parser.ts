@@ -13,6 +13,7 @@ const BANG = '!'
 const ASTERISK = '*'
 const UNDERSCORE = '_'
 const RIGHTANGLEBRACKET = '>'
+const LEFTANGLEBRACKET = '<'
 
 export async function parseFile(filePath: string) {
   const content = await readFile(filePath, { encoding: 'utf8' })
@@ -115,6 +116,9 @@ function parseBody(bodyText: string) {
           }
           break
         }
+      case LEFTANGLEBRACKET:
+        parsed += curr
+        break
       default:
         if (blockLock) {
           // handle block items 
