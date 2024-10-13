@@ -324,14 +324,14 @@ function parseLinkOrImageAttributes(i, chars) {
 }
 
 function generateIntLink(text, src) {
-  return `<a href=${src}>${text}</a>`
+  return `<a href="${src}">${text}</a>`
 }
 
 function generateExtLink(text, src) {
-  return `<a href=${src} target="_blank" rel="noopener norefferer">${text}</a>`
+  return `<a href="${src}" target="_blank" rel="noopener norefferer">${text}</a>`
 }
 
 function generateImage(text, src) {
-  return `<img src=${src} alt=${text}>`
+  return `<img src="${src}" alt="${text}">`
 }
 

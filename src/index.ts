@@ -76,6 +76,7 @@ function generatePage(file) {
         <main>
           <h1>${file.name != 'home' ? file.header.title : ''}</h1>
           ${file.body}
+          ${file.header.isportal ? "<h5>Portal Entries</h5>\n" : ""}
           ${file.header.isportal ? (file.portalEntries || "") : ""}
 
 
