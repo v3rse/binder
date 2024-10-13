@@ -188,3 +188,10 @@ generates:
   <li>third<\li>
 </ol>
 ```
+
+#### embedded HTML
+It should be a single line starting with the left angle bracket
+
+```
+<iframe src="http://www.blahblah.com/">
+```
